@@ -1,0 +1,16 @@
+{% extends 'base.html' %}
+
+{% block title %}退出登录{% endblock %}
+
+{% block content %}
+<div class="auth-container">
+    <div class="text-center">
+        <h2 class="mb-4">退出登录</h2>
+        <p class="mb-4">您已成功退出登录。</p>
+        <div class="d-grid gap-2">
+            <a href="{% url 'login' %}" class="btn btn-primary">重新登录</a>
+            <a href="{% url 'home' %}" class="btn btn-outline-secondary">返回首页</a>
+        </div>
+    </div>
+</div>
+{% endblock %}
