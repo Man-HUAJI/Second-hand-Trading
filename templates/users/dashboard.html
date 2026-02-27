@@ -1,0 +1,944 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>个人中心 - 校园二手</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .profile-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px 0;
+            margin-bottom: 30px;
+        }
+        
+        .avatar-container {
+            position: relative;
+            width: 120px;
+            height: 120px;
+            margin: 0 auto 20px;
+        }
+        
+        .avatar {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 4px solid white;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        
+        .rating-stars {
+            color: #ffc107;
+            font-size: 1.2rem;
+        }
+        
+        .card {
+            border: none;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+            transition: transform 0.3s ease;
+        }
+        
+        .card:hover {
+            transform: translateY(-2px);
+        }
+        
+        .item-image {
+            height: 200px;
+            object-fit: cover;
+        }
+        
+        .price-tag {
+            color: #e74c3c;
+            font-weight: bold;
+            font-size: 1.2rem;
+        }
+        
+        .status-badge {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            z-index: 1;
+        }
+        
+        .nav-tabs .nav-link {
+            color: #6c757d;
+            font-weight: 500;
+        }
+        
+        .nav-tabs .nav-link.active {
+            color: #667eea;
+            border-bottom: 3px solid #667eea;
+        }
+    </style>
+</head>
+<body>
+    <!-- 导航栏 -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand fw-bold" href="{% url 'core:home' %}">
+                <i class="fas fa-recycle me-2"></i>校园二手
+            </a>
+            
+            <div class="navbar-nav ms-auto">
+                <a class="nav-link" href="{% url 'core:home' %}">返回首页</a>
+                <a class="nav-link" href="{% url 'users:logout' %}">退出登录</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 用户信息头部 -->
+    <div class="profile-header" style="
+        {% if profile.header_bg_type == 'color' %}
+            background: {{ profile.header_bg_color }};
+        {% elif profile.header_bg_type == 'image' and profile.header_bg_image %}
+            background: linear-gradient(rgba(0,0,0,0.3), rgba(0,0,0,0.3)), url('{{ profile.header_bg_image.url }}') center/cover;
+        {% else %}
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        {% endif %}
+        color: white;
+        padding: 40px 0;
+        margin-bottom: 30px;
+        position: relative;
+        overflow: hidden;
+    ">
+        <!-- 背景图片加载失败的备用背景 -->
+        <div class="bg-fallback" style="
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            z-index: -1;
+            display: {% if profile.header_bg_type == 'image' and profile.header_bg_image %}none{% else %}block{% endif %};
+        "></div>
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-md-3 text-center">
+                    <div class="avatar-container">
+                        <img src="{{ profile.get_avatar_url }}" class="avatar" alt="{{ user.username }}">
+                    </div>
+                </div>
+                <div class="col-md-9">
+                    <h1 class="mb-2">{{ profile.get_display_name }}</h1>
+                    <p class="mb-1">
+                        <i class="fas fa-user me-2"></i>@{{ user.username }}
+                        {% if profile.qq %}
+                            <span class="ms-3"><i class="fab fa-qq me-2"></i>{{ profile.qq }}</span>
+                        {% endif %}
+                        {% if profile.wechat %}
+                            <span class="ms-3"><i class="fab fa-weixin me-2"></i>{{ profile.wechat }}</span>
+                        {% endif %}
+                    </p>
+                    <div class="rating-stars mb-2">
+                        {% for i in "12345" %}
+                            {% if forloop.counter <= avg_rating|floatformat:0 %}
+                                <i class="fas fa-star"></i>
+                            {% else %}
+                                <i class="far fa-star"></i>
+                            {% endif %}
+                        {% endfor %}
+                        <span class="ms-2">{{ avg_rating|floatformat:1 }}分 ({{ review_count }}条评价)</span>
+                    </div>
+                    {% if profile.bio %}
+                        <p class="mb-0">{{ profile.bio }}</p>
+                    {% else %}
+                        <p class="mb-0 text-light opacity-75">这个人很懒，还没有写个人简介...</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- 消息提示 -->
+        {% if messages %}
+        <div class="mb-4">
+            {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <div class="row">
+            <!-- 内容区域 -->
+            <div class="col-12">
+                <!-- 标签页导航 -->
+                <ul class="nav nav-tabs" id="myTab" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="profile-tab" data-bs-toggle="tab" data-bs-target="#profile" type="button" role="tab">
+                            <i class="fas fa-user-edit me-2"></i>编辑个人信息
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="items-tab" data-bs-toggle="tab" data-bs-target="#items" type="button" role="tab">
+                            <i class="fas fa-box me-2"></i>我的物品 ({{ user_items.count }})
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="reviews-tab" data-bs-toggle="tab" data-bs-target="#reviews" type="button" role="tab">
+                            <i class="fas fa-star me-2"></i>收到的评价 ({{ user_reviews.count }})
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="given-reviews-tab" data-bs-toggle="tab" data-bs-target="#given-reviews" type="button" role="tab">
+                            <i class="fas fa-comment me-2"></i>给出的评价 ({{ given_reviews.count }})
+                        </button>
+                    </li>
+                </ul>
+
+                <!-- 标签页内容 -->
+                <div class="tab-content mt-3" id="myTabContent">
+                    <!-- 编辑个人信息 -->
+                    <div class="tab-pane fade show active" id="profile" role="tabpanel">
+                        <div class="row">
+                            <div class="col-lg-8">
+                                <div class="card">
+                                    <div class="card-header bg-primary text-white">
+                                        <h5 class="mb-0"><i class="fas fa-user-edit me-2"></i>编辑个人信息</h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <form method="post" enctype="multipart/form-data">
+                                            {% csrf_token %}
+                                            
+                                            <div class="row">
+                                                <div class="col-md-6 mb-3">
+                                                    <label class="form-label">{{ form.nickname.label }}</label>
+                                                    {{ form.nickname }}
+                                                </div>
+                                                
+                                                <div class="col-md-6 mb-3">
+                                                    <label class="form-label">{{ form.avatar.label }}</label>
+                                                    <input type="file" name="avatar" class="form-control" id="id_avatar" accept="image/*">
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="row">
+                                                <div class="col-md-6 mb-3">
+                                                    <label class="form-label">{{ form.qq.label }}</label>
+                                                    {{ form.qq }}
+                                                </div>
+                                                
+                                                <div class="col-md-6 mb-3">
+                                                    <label class="form-label">{{ form.wechat.label }}</label>
+                                                    {{ form.wechat }}
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="mb-3">
+                                                <label class="form-label">{{ form.bio.label }}</label>
+                                                {{ form.bio }}
+                                            </div>
+                                            
+                                            <!-- 背景设置 -->
+                                            <div class="card mt-4">
+                                                <div class="card-header bg-secondary text-white">
+                                                    <h6 class="mb-0"><i class="fas fa-palette me-2"></i>主页背景设置</h6>
+                                                </div>
+                                                <div class="card-body">
+                                                    <div class="row">
+                                                        <div class="col-md-6 mb-3">
+                                                            <label class="form-label">{{ form.header_bg_type.label }}</label>
+                                                            {{ form.header_bg_type }}
+                                                        </div>
+                                                        <div class="col-md-6 mb-3">
+                                                            <label class="form-label">{{ form.header_bg_color.label }}</label>
+                                                            <div class="input-group">
+                                                                {{ form.header_bg_color }}
+                                                                <span class="input-group-text">
+                                                                    <i class="fas fa-palette"></i>
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    
+                                                    <div class="mb-3">
+                                                        <label class="form-label">{{ form.header_bg_image.label }}</label>
+                                                        <input type="file" name="header_bg_image" class="form-control" id="id_header_bg_image" accept="image/*">
+                                                        {% if profile.header_bg_image %}
+                                                            <div class="mt-2">
+                                                                <small class="text-muted">当前背景图片：</small>
+                                                                <img src="{{ profile.header_bg_image.url }}" class="img-thumbnail" width="100" alt="当前背景">
+                                                            </div>
+                                                        {% endif %}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="d-grid">
+                                                <button type="submit" class="btn btn-primary">
+                                                    <i class="fas fa-save me-2"></i>保存修改
+                                                </button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="col-lg-4">
+                                <div class="card">
+                                    <div class="card-header bg-info text-white">
+                                        <h6 class="mb-0"><i class="fas fa-info-circle me-2"></i>个人信息</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="text-center mb-3">
+                                            <img src="{{ profile.get_avatar_url }}" class="rounded-circle" width="100" height="100" alt="{{ user.username }}">
+                                        </div>
+                                        
+                                        <div class="mb-2">
+                                            <strong>用户名：</strong>{{ user.username }}
+                                        </div>
+                                        
+                                        {% if profile.nickname %}
+                                        <div class="mb-2">
+                                            <strong>昵称：</strong>{{ profile.nickname }}
+                                        </div>
+                                        {% endif %}
+                                        
+                                        {% if profile.qq %}
+                                        <div class="mb-2">
+                                            <strong>QQ：</strong>{{ profile.qq }}
+                                        </div>
+                                        {% endif %}
+                                        
+                                        {% if profile.wechat %}
+                                        <div class="mb-2">
+                                            <strong>微信：</strong>{{ profile.wechat }}
+                                        </div>
+                                        {% endif %}
+                                        
+                                        {% if profile.bio %}
+                                        <div class="mb-2">
+                                            <strong>个人简介：</strong>{{ profile.bio }}
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 我的物品 -->
+                    <div class="tab-pane fade" id="items" role="tabpanel">
+                        {% if user_items %}
+                            <div class="row">
+                                {% for item in user_items %}
+                                <div class="col-md-6 mb-3">
+                                    <div class="card h-100">
+                                        {% if item.image %}
+                                            <img src="{{ item.image.url }}" class="card-img-top item-image" alt="{{ item.title }}">
+                                        {% else %}
+                                            <div class="card-img-top item-image bg-light d-flex align-items-center justify-content-center">
+                                                <i class="fas fa-image fa-3x text-muted"></i>
+                                            </div>
+                                        {% endif %}
+                                        
+                                        <span class="status-badge badge {% if item.status == 'available' %}bg-success{% elif item.status == 'sold' %}bg-danger{% else %}bg-warning{% endif %}">
+                                            {{ item.get_status_display }}
+                                        </span>
+                                        
+                                        <div class="card-body">
+                                            <h6 class="card-title">{{ item.title }}</h6>
+                                            <p class="card-text text-muted small">{{ item.description|truncatewords:20 }}</p>
+                                            {% if item.price %}
+                                                <div class="price-tag">¥{{ item.price }}</div>
+                                            {% else %}
+                                                <div class="text-muted">价格面议</div>
+                                            {% endif %}
+                                        </div>
+                                        
+                                        <div class="card-footer bg-transparent">
+                                            <small class="text-muted">
+                                                <i class="far fa-clock me-1"></i>
+                                                {{ item.created_at|date:"Y-m-d" }}
+                                            </small>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <div class="text-center py-5">
+                                <i class="fas fa-box-open fa-4x text-muted mb-3"></i>
+                                <h4 class="text-muted">暂无发布的物品</h4>
+                                <p class="text-muted">快来发布你的第一个物品吧！</p>
+                                <a href="{% url 'users:create_item' %}" class="btn btn-primary">
+                                    <i class="fas fa-plus me-2"></i>发布物品
+                                </a>
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- 收到的评价 -->
+                    <div class="tab-pane fade" id="reviews" role="tabpanel">
+                        {% if user_reviews %}
+                            {% for review in user_reviews %}
+                            <div class="card mb-3">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between align-items-start">
+                                        <div>
+                                            <h6 class="mb-1">{{ review.reviewer.username }}</h6>
+                                            <div class="rating-stars mb-2">
+                                                {{ review.get_rating_display }}
+                                            </div>
+                                        </div>
+                                        <small class="text-muted">{{ review.created_at|date:"Y-m-d H:i" }}</small>
+                                    </div>
+                                    <p class="mb-0">{{ review.content }}</p>
+                                    {% if review.item %}
+                                        <small class="text-muted">关联物品：{{ review.item.title }}</small>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% endfor %}
+                        {% else %}
+                            <div class="text-center py-5">
+                                <i class="fas fa-star fa-4x text-muted mb-3"></i>
+                                <h4 class="text-muted">暂无收到的评价</h4>
+                                <p class="text-muted">完成交易后，其他用户会给你评价</p>
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- 给出的评价 -->
+                    <div class="tab-pane fade" id="given-reviews" role="tabpanel">
+                        {% if given_reviews %}
+                            {% for review in given_reviews %}
+                            <div class="card mb-3">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between align-items-start">
+                                        <div>
+                                            <h6 class="mb-1">对 {{ review.reviewed_user.username }} 的评价</h6>
+                                            <div class="rating-stars mb-2">
+                                                {{ review.get_rating_display }}
+                                            </div>
+                                        </div>
+                                        <small class="text-muted">{{ review.created_at|date:"Y-m-d H:i" }}</small>
+                                    </div>
+                                    <p class="mb-0">{{ review.content }}</p>
+                                    {% if review.item %}
+                                        <small class="text-muted">关联物品：{{ review.item.title }}</small>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% endfor %}
+                        {% else %}
+                            <div class="text-center py-5">
+                                <i class="fas fa-comment fa-4x text-muted mb-3"></i>
+                                <h4 class="text-muted">暂无给出的评价</h4>
+                                <p class="text-muted">完成交易后，你可以给其他用户评价</p>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast通知容器 -->
+    <div class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 1100;">
+        <div id="successToast" class="toast align-items-center text-bg-success border-0" role="alert">
+            <div class="d-flex">
+                <div class="toast-body">
+                    <i class="fas fa-check-circle me-2"></i>图片裁剪完成！请点击"保存修改"按钮应用更改。
+                </div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+            </div>
+        </div>
+        
+        <div id="errorToast" class="toast align-items-center text-bg-danger border-0" role="alert">
+            <div class="d-flex">
+                <div class="toast-body">
+                    <i class="fas fa-exclamation-circle me-2"></i>裁剪失败，请重试。
+                </div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 图片编辑弹窗 -->
+    <div class="modal fade" id="imageEditorModal" tabindex="-1" aria-labelledby="imageEditorModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="imageEditorModalLabel">图片编辑</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-8">
+                            <div id="imageEditorContainer" style="border: 1px solid #ddd; border-radius: 5px; overflow: hidden;">
+                                <canvas id="imageCanvas" width="400" height="300"></canvas>
+                            </div>
+                            <div class="mt-2">
+                                <label class="form-label">缩放：<span id="zoomValue">100%</span></label>
+                                <input type="range" class="form-range" id="zoomSlider" min="0.1" max="3" step="0.01" value="1">
+                                <div class="d-flex justify-content-between">
+                                    <small>10%</small>
+                                    <small>50%</small>
+                                    <small>100%</small>
+                                    <small>200%</small>
+                                    <small>300%</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label class="form-label">裁剪形状：</label>
+                                <select class="form-select" id="cropShape">
+                                    <option value="circle">圆形（头像）</option>
+                                    <option value="rectangle">矩形（背景图）</option>
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">预览：</label>
+                                <div id="previewContainer" style="width: 150px; height: 150px; border: 1px solid #ddd; border-radius: 5px; overflow: hidden;">
+                                    <canvas id="previewCanvas" width="150" height="150"></canvas>
+                                </div>
+                            </div>
+                            <div class="d-grid gap-2">
+                                <button type="button" class="btn btn-primary" id="cropImage">裁剪并保存</button>
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // 图片编辑功能
+        let currentImageFile = null;
+        let currentImageType = null; // 'avatar' or 'header_bg'
+        let canvas = document.getElementById('imageCanvas');
+        let ctx = canvas.getContext('2d');
+        let previewCanvas = document.getElementById('previewCanvas');
+        let previewCtx = previewCanvas.getContext('2d');
+        let image = new Image();
+        let scale = 1;
+        let offsetX = 0;
+        let offsetY = 0;
+        let isDragging = false;
+        let lastX, lastY;
+
+        // 初始化图片编辑器
+        function initImageEditor() {
+            // 监听文件上传
+            document.getElementById('id_avatar').addEventListener('change', function(e) {
+                if (e.target.files.length > 0) {
+                    currentImageType = 'avatar';
+                    openImageEditor(e.target.files[0]);
+                }
+            });
+
+            document.getElementById('id_header_bg_image').addEventListener('change', function(e) {
+                if (e.target.files.length > 0) {
+                    currentImageType = 'header_bg';
+                    openImageEditor(e.target.files[0]);
+                }
+            });
+
+            // 缩放控制
+            document.getElementById('zoomSlider').addEventListener('input', function(e) {
+                scale = parseFloat(e.target.value);
+                // 更新缩放值显示
+                document.getElementById('zoomValue').textContent = Math.round(scale * 100) + '%';
+                drawImage();
+            });
+
+            // 裁剪形状切换
+            document.getElementById('cropShape').addEventListener('change', function(e) {
+                updatePreview();
+            });
+
+            // 裁剪按钮
+            document.getElementById('cropImage').addEventListener('click', cropAndSave);
+
+            // 画布拖动功能
+            canvas.addEventListener('mousedown', startDrag);
+            canvas.addEventListener('mousemove', drag);
+            canvas.addEventListener('mouseup', endDrag);
+            canvas.addEventListener('mouseleave', endDrag);
+
+            // 触摸事件支持
+            canvas.addEventListener('touchstart', startDrag);
+            canvas.addEventListener('touchmove', drag);
+            canvas.addEventListener('touchend', endDrag);
+        }
+
+        // 打开图片编辑器
+        function openImageEditor(file) {
+            currentImageFile = file;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                image.src = e.target.result;
+                image.onload = function() {
+                    // 根据图片类型设置默认裁剪形状
+                    if (currentImageType === 'avatar') {
+                        document.getElementById('cropShape').value = 'circle';
+                    } else {
+                        document.getElementById('cropShape').value = 'rectangle';
+                    }
+                    
+                    // 重置缩放和位置
+                    scale = 1;
+                    offsetX = 0;
+                    offsetY = 0;
+                    document.getElementById('zoomSlider').value = 1;
+                    
+                    // 显示弹窗
+                    const modal = new bootstrap.Modal(document.getElementById('imageEditorModal'));
+                    modal.show();
+                    
+                    // 绘制图片
+                    drawImage();
+                };
+            };
+            reader.readAsDataURL(file);
+        }
+
+        // 绘制图片到画布
+        function drawImage() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // 计算缩放后的尺寸
+            const scaledWidth = image.width * scale;
+            const scaledHeight = image.height * scale;
+            
+            // 居中显示
+            const x = (canvas.width - scaledWidth) / 2 + offsetX;
+            const y = (canvas.height - scaledHeight) / 2 + offsetY;
+            
+            // 绘制图片
+            ctx.drawImage(image, x, y, scaledWidth, scaledHeight);
+            
+            // 绘制辅助线
+            drawGuidelines();
+            
+            // 更新预览
+            updatePreview();
+        }
+        
+        // 绘制辅助线
+        function drawGuidelines() {
+            ctx.save();
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.7)';
+            ctx.lineWidth = 1;
+            ctx.setLineDash([5, 5]);
+            
+            // 垂直中线
+            ctx.beginPath();
+            ctx.moveTo(canvas.width / 2, 0);
+            ctx.lineTo(canvas.width / 2, canvas.height);
+            ctx.stroke();
+            
+            // 水平中线
+            ctx.beginPath();
+            ctx.moveTo(0, canvas.height / 2);
+            ctx.lineTo(canvas.width, canvas.height / 2);
+            ctx.stroke();
+            
+            // 九宫格辅助线
+            const thirdWidth = canvas.width / 3;
+            const thirdHeight = canvas.height / 3;
+            
+            ctx.beginPath();
+            ctx.moveTo(thirdWidth, 0);
+            ctx.lineTo(thirdWidth, canvas.height);
+            ctx.stroke();
+            
+            ctx.beginPath();
+            ctx.moveTo(thirdWidth * 2, 0);
+            ctx.lineTo(thirdWidth * 2, canvas.height);
+            ctx.stroke();
+            
+            ctx.beginPath();
+            ctx.moveTo(0, thirdHeight);
+            ctx.lineTo(canvas.width, thirdHeight);
+            ctx.stroke();
+            
+            ctx.beginPath();
+            ctx.moveTo(0, thirdHeight * 2);
+            ctx.lineTo(canvas.width, thirdHeight * 2);
+            ctx.stroke();
+            
+            ctx.restore();
+            
+            // 绘制裁剪区域边框
+            const cropShape = document.getElementById('cropShape').value;
+            if (cropShape === 'circle') {
+                // 圆形裁剪区域
+                ctx.beginPath();
+                ctx.arc(canvas.width / 2, canvas.height / 2, Math.min(canvas.width, canvas.height) / 3, 0, Math.PI * 2);
+                ctx.strokeStyle = 'rgba(255, 0, 0, 0.8)';
+                ctx.lineWidth = 2;
+                ctx.setLineDash([]);
+                ctx.stroke();
+            } else {
+                // 矩形裁剪区域
+                const rectWidth = canvas.width * 0.8;
+                const rectHeight = canvas.height * 0.6;
+                const rectX = (canvas.width - rectWidth) / 2;
+                const rectY = (canvas.height - rectHeight) / 2;
+                
+                ctx.beginPath();
+                ctx.rect(rectX, rectY, rectWidth, rectHeight);
+                ctx.strokeStyle = 'rgba(255, 0, 0, 0.8)';
+                ctx.lineWidth = 2;
+                ctx.setLineDash([]);
+                ctx.stroke();
+            }
+        }
+
+        // 更新预览
+        function updatePreview() {
+            previewCtx.clearRect(0, 0, previewCanvas.width, previewCanvas.height);
+            
+            const cropShape = document.getElementById('cropShape').value;
+            
+            // 计算当前显示区域在原始图片中的位置和尺寸
+            const scaledWidth = image.width * scale;
+            const scaledHeight = image.height * scale;
+            
+            // 计算当前显示区域在原始图片中的位置
+            const displayX = (canvas.width - scaledWidth) / 2 + offsetX;
+            const displayY = (canvas.height - scaledHeight) / 2 + offsetY;
+            
+            // 计算裁剪区域（基于当前显示的中心区域）
+            let sourceX, sourceY, sourceWidth, sourceHeight;
+            
+            if (cropShape === 'circle') {
+                // 圆形裁剪：以画布中心为圆心，取最小边长的1/3为半径
+                const radius = Math.min(canvas.width, canvas.height) / 3;
+                const centerX = canvas.width / 2;
+                const centerY = canvas.height / 2;
+                
+                // 计算在原始图片中的对应区域
+                sourceX = (centerX - radius - displayX) / scale;
+                sourceY = (centerY - radius - displayY) / scale;
+                sourceWidth = (radius * 2) / scale;
+                sourceHeight = (radius * 2) / scale;
+                
+                // 圆形裁剪预览
+                previewCtx.save();
+                previewCtx.beginPath();
+                previewCtx.arc(previewCanvas.width / 2, previewCanvas.height / 2, previewCanvas.width / 2, 0, Math.PI * 2);
+                previewCtx.clip();
+                previewCtx.drawImage(
+                    image, 
+                    sourceX, sourceY, sourceWidth, sourceHeight,
+                    0, 0, previewCanvas.width, previewCanvas.height
+                );
+                previewCtx.restore();
+            } else {
+                // 矩形裁剪：以画布中心为基准，取80%宽度和60%高度
+                const rectWidth = canvas.width * 0.8;
+                const rectHeight = canvas.height * 0.6;
+                const rectX = (canvas.width - rectWidth) / 2;
+                const rectY = (canvas.height - rectHeight) / 2;
+                
+                // 计算在原始图片中的对应区域
+                sourceX = (rectX - displayX) / scale;
+                sourceY = (rectY - displayY) / scale;
+                sourceWidth = rectWidth / scale;
+                sourceHeight = rectHeight / scale;
+                
+                // 矩形裁剪预览
+                previewCtx.drawImage(
+                    image,
+                    sourceX, sourceY, sourceWidth, sourceHeight,
+                    0, 0, previewCanvas.width, previewCanvas.height
+                );
+            }
+            
+            // 在预览图上添加裁剪形状指示
+            previewCtx.save();
+            previewCtx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
+            previewCtx.lineWidth = 2;
+            
+            if (cropShape === 'circle') {
+                previewCtx.beginPath();
+                previewCtx.arc(previewCanvas.width / 2, previewCanvas.height / 2, previewCanvas.width / 2, 0, Math.PI * 2);
+                previewCtx.stroke();
+            } else {
+                previewCtx.strokeRect(0, 0, previewCanvas.width, previewCanvas.height);
+            }
+            previewCtx.restore();
+        }
+
+        // 拖动功能
+        function startDrag(e) {
+            isDragging = true;
+            const rect = canvas.getBoundingClientRect();
+            if (e.type === 'mousedown') {
+                lastX = e.clientX - rect.left;
+                lastY = e.clientY - rect.top;
+            } else if (e.type === 'touchstart') {
+                lastX = e.touches[0].clientX - rect.left;
+                lastY = e.touches[0].clientY - rect.top;
+            }
+        }
+
+        function drag(e) {
+            if (!isDragging) return;
+            e.preventDefault();
+            
+            const rect = canvas.getBoundingClientRect();
+            let currentX, currentY;
+            
+            if (e.type === 'mousemove') {
+                currentX = e.clientX - rect.left;
+                currentY = e.clientY - rect.top;
+            } else if (e.type === 'touchmove') {
+                currentX = e.touches[0].clientX - rect.left;
+                currentY = e.touches[0].clientY - rect.top;
+            }
+            
+            offsetX += (currentX - lastX);
+            offsetY += (currentY - lastY);
+            lastX = currentX;
+            lastY = currentY;
+            
+            drawImage();
+        }
+
+        function endDrag() {
+            isDragging = false;
+        }
+
+        // 裁剪并保存
+        function cropAndSave() {
+            try {
+                const cropShape = document.getElementById('cropShape').value;
+                const tempCanvas = document.createElement('canvas');
+                const tempCtx = tempCanvas.getContext('2d');
+                
+                // 计算当前显示区域在原始图片中的位置和尺寸
+                const scaledWidth = image.width * scale;
+                const scaledHeight = image.height * scale;
+                const displayX = (canvas.width - scaledWidth) / 2 + offsetX;
+                const displayY = (canvas.height - scaledHeight) / 2 + offsetY;
+                
+                if (cropShape === 'circle') {
+                    // 圆形裁剪：以画布中心为圆心，取最小边长的1/3为半径
+                    const radius = Math.min(canvas.width, canvas.height) / 3;
+                    const centerX = canvas.width / 2;
+                    const centerY = canvas.height / 2;
+                    
+                    // 计算在原始图片中的对应区域
+                    const sourceX = (centerX - radius - displayX) / scale;
+                    const sourceY = (centerY - radius - displayY) / scale;
+                    const sourceWidth = (radius * 2) / scale;
+                    const sourceHeight = (radius * 2) / scale;
+                    
+                    // 圆形裁剪
+                    tempCanvas.width = 200;
+                    tempCanvas.height = 200;
+                    tempCtx.save();
+                    tempCtx.beginPath();
+                    tempCtx.arc(100, 100, 100, 0, Math.PI * 2);
+                    tempCtx.clip();
+                    tempCtx.drawImage(image, sourceX, sourceY, sourceWidth, sourceHeight, 0, 0, 200, 200);
+                    tempCtx.restore();
+                } else {
+                    // 矩形裁剪：以画布中心为基准，取80%宽度和60%高度
+                    const rectWidth = canvas.width * 0.8;
+                    const rectHeight = canvas.height * 0.6;
+                    const rectX = (canvas.width - rectWidth) / 2;
+                    const rectY = (canvas.height - rectHeight) / 2;
+                    
+                    // 计算在原始图片中的对应区域
+                    const sourceX = (rectX - displayX) / scale;
+                    const sourceY = (rectY - displayY) / scale;
+                    const sourceWidth = rectWidth / scale;
+                    const sourceHeight = rectHeight / scale;
+                    
+                    // 矩形裁剪（背景图）
+                    tempCanvas.width = 800;
+                    tempCanvas.height = 400;
+                    tempCtx.drawImage(image, sourceX, sourceY, sourceWidth, sourceHeight, 0, 0, 800, 400);
+                }
+                
+                // 将裁剪后的图片转换为Blob并更新文件输入
+                tempCanvas.toBlob(function(blob) {
+                    if (!blob) {
+                        throw new Error('图片转换失败');
+                    }
+                    
+                    const file = new File([blob], currentImageFile.name, { type: 'image/png' });
+                    
+                    // 创建DataTransfer对象来设置文件
+                    const dataTransfer = new DataTransfer();
+                    dataTransfer.items.add(file);
+                    
+                    if (currentImageType === 'avatar') {
+                        document.getElementById('id_avatar').files = dataTransfer.files;
+                    } else {
+                        document.getElementById('id_header_bg_image').files = dataTransfer.files;
+                    }
+                    
+                    // 关闭弹窗
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('imageEditorModal'));
+                    modal.hide();
+                    
+                    // 显示优雅的成功消息
+                    const successToast = new bootstrap.Toast(document.getElementById('successToast'));
+                    successToast.show();
+                    
+                }, 'image/png', 0.9); // 设置图片质量为90%
+                
+            } catch (error) {
+                console.error('裁剪失败:', error);
+                // 显示错误消息
+                const errorToast = new bootstrap.Toast(document.getElementById('errorToast'));
+                errorToast.show();
+            }
+        }
+
+        // 初始化编辑器
+        document.addEventListener('DOMContentLoaded', initImageEditor);
+        
+        // 背景图片加载检测
+        document.addEventListener('DOMContentLoaded', function() {
+            const bgFallback = document.querySelector('.bg-fallback');
+            const profileHeader = document.querySelector('.profile-header');
+            
+            // 检查是否有背景图片需要加载
+            const bgImageUrl = profileHeader.style.backgroundImage;
+            if (bgImageUrl && bgImageUrl.includes('url')) {
+                const img = new Image();
+                img.onload = function() {
+                    // 图片加载成功，隐藏备用背景
+                    if (bgFallback) {
+                        bgFallback.style.display = 'none';
+                    }
+                };
+                img.onerror = function() {
+                    // 图片加载失败，显示备用背景
+                    if (bgFallback) {
+                        bgFallback.style.display = 'block';
+                    }
+                    // 移除失败的背景图片
+                    profileHeader.style.backgroundImage = '';
+                    profileHeader.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+                };
+                
+                // 提取URL并尝试加载
+                const urlMatch = bgImageUrl.match(/url\(['"]?(.*?)['"]?\)/);
+                if (urlMatch && urlMatch[1]) {
+                    img.src = urlMatch[1];
+                }
+            }
+        });
+    </script>
+</body>
+</html>
