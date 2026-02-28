@@ -110,9 +110,16 @@
                     
                     <div class="row mb-3">
                         <div class="col-sm-6">
+                            <strong>价格：</strong>
+                            <span class="h5 text-primary">¥{{ item.price }}</span>
+                        </div>
+                        <div class="col-sm-6">
                             <strong>交易方式：</strong>
                             <span class="badge bg-warning text-dark">{{ item.get_trade_method_display }}</span>
                         </div>
+                    </div>
+                    
+                    <div class="row mb-3">
                         <div class="col-sm-6">
                             <strong>发布时间：</strong>
                             <span>{{ item.created_at|date:"Y年m月d日 H:i" }}</span>
@@ -142,7 +149,10 @@
                                      width="40" 
                                      height="40" 
                                      alt="{{ item.seller.username }}">
-                                <span>{{ item.seller.username }}</span>
+                                <a href="{% url 'users:user_profile' item.seller.username %}" 
+                                   class="text-decoration-none">
+                                    <span class="fw-bold text-primary">{{ item.seller.username }}</span>
+                                </a>
                             </div>
                         </div>
                     </div>

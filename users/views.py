@@ -154,7 +154,7 @@ def user_profile(request, username):
     profile = user.profile
     
     # 获取用户公开的物品（在售状态）
-    public_items = Item.objects.filter(seller=user, status='available').order_by('-created_at')
+    public_items = Item.objects.filter(seller=user, status='active').order_by('-created_at')
     
     # 获取用户收到的评价
     user_reviews = Review.objects.filter(reviewed_user=user).order_by('-created_at')

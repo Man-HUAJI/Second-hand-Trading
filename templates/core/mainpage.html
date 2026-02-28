@@ -213,12 +213,16 @@
                                 {{ item.title|truncatechars:30 }}
                             </a>
                         </h6>
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <span class="h5 text-primary">¥{{ item.price }}</span>
+                            <span class="badge bg-{{ item.get_condition_display|cut:' ' }}">{{ item.get_condition_display }}</span>
+                        </div>
                         <p class="card-text small text-muted">
                             {{ item.description|truncatechars:50 }}
                         </p>
                         <div class="d-flex justify-content-between align-items-center">
                             <span class="badge bg-primary">{{ item.category.name }}</span>
-                            <span class="badge bg-{{ item.get_condition_display|cut:' ' }}">{{ item.get_condition_display }}</span>
+                            <span class="badge bg-warning text-dark">{{ item.get_trade_method_display }}</span>
                         </div>
                     </div>
                     

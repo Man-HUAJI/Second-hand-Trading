@@ -57,6 +57,12 @@ class Item(models.Model):
     title = models.CharField(max_length=200, verbose_name='物品标题')
     category = models.ForeignKey(Category, on_delete=models.CASCADE, verbose_name='物品分类')
     description = models.TextField(verbose_name='详细描述')
+    price = models.CharField(
+        max_length=50, 
+        verbose_name='价格',
+        default='面议',
+        help_text='支持精确值（如：100）或区间（如：50-100），单位：元'
+    )
     trade_method = models.CharField(
         max_length=20, 
         choices=TRADE_METHOD_CHOICES, 

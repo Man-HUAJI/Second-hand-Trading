@@ -8,7 +8,7 @@ class ItemForm(forms.ModelForm):
     class Meta:
         model = Item
         fields = [
-            'title', 'category', 'description', 'trade_method', 
+            'title', 'category', 'description', 'price', 'trade_method', 
             'contact', 'condition', 'image'
         ]
         widgets = {
@@ -23,6 +23,10 @@ class ItemForm(forms.ModelForm):
                 'class': 'form-control',
                 'placeholder': '请详细描述物品信息，如品牌、型号、使用情况等',
                 'rows': 5
+            }),
+            'price': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': '例如：100 或 50-100（单位：元）'
             }),
             'trade_method': forms.Select(attrs={
                 'class': 'form-select'

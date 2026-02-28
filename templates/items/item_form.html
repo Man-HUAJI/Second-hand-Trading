@@ -136,6 +136,23 @@
                         <div class="row">
                             <div class="col-md-4">
                                 <div class="mb-3">
+                                    <label for="{{ form.price.id_for_label }}" class="form-label">{{ form.price.label }}</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">¥</span>
+                                        {{ form.price }}
+                                    </div>
+                                    {% if form.price.errors %}
+                                        <div class="text-danger small">
+                                            {% for error in form.price.errors %}
+                                                {{ error }}
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                    <div class="form-text">支持精确值（如：100）或区间（如：50-100）</div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
                                     <label for="{{ form.trade_method.id_for_label }}" class="form-label">{{ form.trade_method.label }}</label>
                                     {{ form.trade_method }}
                                     {% if form.trade_method.errors %}
