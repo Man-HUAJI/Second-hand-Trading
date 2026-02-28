@@ -26,5 +26,5 @@ urlpatterns = [
     path('users/', include('users.urls')),
 ]
 
-if settings.DEBUG:
-    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+# 在生产环境中也需要提供媒体文件访问
+urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

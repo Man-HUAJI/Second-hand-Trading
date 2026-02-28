@@ -42,6 +42,26 @@ class CustomUserCreationForm(UserCreationForm):
             }),
         }
     
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # 自定义错误消息
+        self.fields['username'].error_messages = {
+            'required': '请输入用户名',
+            'invalid': '用户名格式不正确',
+            'unique': '该用户名已被注册',
+        }
+        self.fields['password1'].error_messages = {
+            'required': '请输入密码',
+        }
+        self.fields['password2'].error_messages = {
+            'required': '请确认密码',
+        }
+        
+        # 覆盖密码验证错误消息
+        self.error_messages = {
+            'password_mismatch': '两次输入的密码不一致',
+        }
+    
     def clean_username(self):
         """验证用户名唯一性"""
         username = self.cleaned_data.get('username')
@@ -88,6 +108,22 @@ class CustomAuthenticationForm(AuthenticationForm):
             'style': 'user-select: text; -webkit-user-select: text; -moz-user-select: text; -ms-user-select: text;'
         })
     )
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # 自定义错误消息
+        self.fields['username'].error_messages = {
+            'required': '请输入用户名或邮箱',
+            'invalid': '用户名或邮箱格式不正确',
+        }
+        self.fields['password'].error_messages = {
+            'required': '请输入密码',
+        }
+        # 覆盖默认的错误消息
+        self.error_messages = {
+            'invalid_login': '用户名/邮箱或密码错误，请重试',
+            'inactive': '该账户已被禁用，请联系管理员',
+        }
     
     def clean_username(self):
         """支持用户名或邮箱登录"""

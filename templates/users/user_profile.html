@@ -8,10 +8,39 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
         .profile-header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            {% if profile.header_bg_type == 'image' and profile.header_bg_image %}
+                background-image: url('{{ profile.header_bg_image.url }}');
+                background-size: cover;
+                background-position: center;
+            {% elif profile.header_bg_type == 'color' %}
+                background-color: {{ profile.header_bg_color }};
+            {% else %}
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            {% endif %}
             color: white;
             padding: 40px 0;
             margin-bottom: 30px;
+            position: relative;
+        }
+        
+        .profile-header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            {% if profile.header_bg_type == 'image' and profile.header_bg_image %}
+                background: rgba(0, 0, 0, 0.4);
+            {% else %}
+                background: rgba(0, 0, 0, 0.2);
+            {% endif %}
+            z-index: 1;
+        }
+        
+        .profile-header > .container {
+            position: relative;
+            z-index: 2;
         }
         
         .avatar-container {
