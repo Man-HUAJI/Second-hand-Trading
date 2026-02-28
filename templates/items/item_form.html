@@ -1,0 +1,861 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ title }} - 物品发布系统{% endblock %}
+
+{% block content %}
+<!-- 顶部导航栏 -->
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+    <div class="container">
+        <a class="navbar-brand fw-bold" href="{% url 'home' %}">
+            <i class="fas fa-recycle me-2"></i>校园二手
+        </a>
+        
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav ms-auto">
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'item_list' %}">物品列表</a>
+                </li>
+                
+                {% if user.is_authenticated %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'users:dashboard' %}">个人中心</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'item_create' %}">发布物品</a>
+                    </li>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                            <i class="fas fa-user me-1"></i>
+                            {% if user.profile.nickname %}
+                                {{ user.profile.nickname }}
+                            {% else %}
+                                {{ user.username }}
+                            {% endif %}
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="{% url 'users:dashboard' %}">
+                                <i class="fas fa-tachometer-alt me-2"></i>仪表板
+                            </a></li>
+                            <li><a class="dropdown-item" href="{% url 'my_items' %}">
+                                <i class="fas fa-box me-2"></i>我的物品
+                            </a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="{% url 'users:logout' %}">
+                                <i class="fas fa-sign-out-alt me-2"></i>退出登录
+                            </a></li>
+                        </ul>
+                    </li>
+                {% else %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'users:login' %}">登录</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'users:register' %}">注册</a>
+                    </li>
+                {% endif %}
+            </ul>
+        </div>
+    </div>
+</nav>
+
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title mb-0">{{ title }}</h3>
+                </div>
+                <div class="card-body">
+                    {% if messages %}
+                        {% for message in messages %}
+                            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                    
+                    <form method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        
+                        {% if form.non_field_errors %}
+                            <div class="alert alert-danger">
+                                {% for error in form.non_field_errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.title.id_for_label }}" class="form-label">{{ form.title.label }}</label>
+                                    {{ form.title }}
+                                    {% if form.title.errors %}
+                                        <div class="text-danger small">
+                                            {% for error in form.title.errors %}
+                                                {{ error }}
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.category.id_for_label }}" class="form-label">{{ form.category.label }}</label>
+                                    {{ form.category }}
+                                    {% if form.category.errors %}
+                                        <div class="text-danger small">
+                                            {% for error in form.category.errors %}
+                                                {{ error }}
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="{{ form.description.id_for_label }}" class="form-label">{{ form.description.label }}</label>
+                            {{ form.description }}
+                            {% if form.description.errors %}
+                                <div class="text-danger small">
+                                    {% for error in form.description.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            <div class="form-text">请详细描述物品的品牌、型号、使用情况、瑕疵等信息</div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="{{ form.trade_method.id_for_label }}" class="form-label">{{ form.trade_method.label }}</label>
+                                    {{ form.trade_method }}
+                                    {% if form.trade_method.errors %}
+                                        <div class="text-danger small">
+                                            {% for error in form.trade_method.errors %}
+                                                {{ error }}
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="{{ form.condition.id_for_label }}" class="form-label">{{ form.condition.label }}</label>
+                                    {{ form.condition }}
+                                    {% if form.condition.errors %}
+                                        <div class="text-danger small">
+                                            {% for error in form.condition.errors %}
+                                                {{ error }}
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="{{ form.contact.id_for_label }}" class="form-label">{{ form.contact.label }}</label>
+                                    {{ form.contact }}
+                                    {% if form.contact.errors %}
+                                        <div class="text-danger small">
+                                            {% for error in form.contact.errors %}
+                                                {{ error }}
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="{{ form.image.id_for_label }}" class="form-label">{{ form.image.label }}</label>
+                            <div class="input-group">
+                                <input type="file" class="form-control" id="{{ form.image.id_for_label }}" name="{{ form.image.name }}" accept="image/*">
+                                <button type="button" class="btn btn-outline-secondary" onclick="document.getElementById('{{ form.image.id_for_label }}').click()">
+                                    <i class="fas fa-upload me-1"></i>选择图片
+                                </button>
+                            </div>
+                            {% if form.image.errors %}
+                                <div class="text-danger small">
+                                    {% for error in form.image.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            <div class="form-text">支持 JPG、PNG、GIF、WebP 格式，文件大小不超过5MB</div>
+                            
+                            <!-- 图片预览 -->
+                            <div id="imagePreview" class="mt-3" style="display: none;">
+                                <div class="card">
+                                    <div class="card-body text-center">
+                                        <img id="previewImage" class="img-fluid rounded" style="max-height: 200px;">
+                                        <div class="mt-2">
+                                            <button type="button" class="btn btn-primary btn-sm" id="editImageBtn">
+                                                <i class="fas fa-crop-alt me-1"></i>编辑图片
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        </div>
+                        
+                        <div class="d-grid gap-2 mt-4">
+                            <button type="submit" class="btn btn-primary btn-lg">发布物品</button>
+                            <a href="{% url 'home' %}" class="btn btn-secondary btn-lg">取消</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 图片编辑弹窗 -->
+<div class="modal fade" id="imageEditorModal" tabindex="-1" aria-labelledby="imageEditorModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="imageEditorModalLabel">编辑物品图片</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-8">
+                        <div id="imageEditorContainer" style="border: 1px solid #ddd; border-radius: 5px; overflow: hidden; position: relative; width: 100%; height: 400px;">
+                            <canvas id="imageCanvas" width="600" height="400" style="width: 100%; height: 100%;"></canvas>
+                            <!-- 可调整的辅助线框 -->
+                            <div id="cropFrame" style="position: absolute; top: 100px; left: 100px; width: 400px; height: 200px; border: 2px solid red; cursor: move; box-sizing: border-box;">
+                                <!-- 边角调整点 -->
+                                <div class="resize-handle" data-handle="nw" style="position: absolute; top: -5px; left: -5px; width: 10px; height: 10px; background: red; cursor: nw-resize;"></div>
+                                <div class="resize-handle" data-handle="ne" style="position: absolute; top: -5px; right: -5px; width: 10px; height: 10px; background: red; cursor: ne-resize;"></div>
+                                <div class="resize-handle" data-handle="sw" style="position: absolute; bottom: -5px; left: -5px; width: 10px; height: 10px; background: red; cursor: sw-resize;"></div>
+                                <div class="resize-handle" data-handle="se" style="position: absolute; bottom: -5px; right: -5px; width: 10px; height: 10px; background: red; cursor: se-resize;"></div>
+                            </div>
+                        </div>
+                        <div class="mt-2">
+                            <label class="form-label">缩放：<span id="zoomValue">100%</span></label>
+                            <input type="range" class="form-range" id="zoomSlider" min="0.1" max="3" step="0.01" value="1">
+                            <div class="d-flex justify-content-between">
+                                <small>10%</small>
+                                <small>50%</small>
+                                <small>100%</small>
+                                <small>200%</small>
+                                <small>300%</small>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">裁剪框尺寸：<span id="cropSize">400 × 200</span></label>
+                            <div class="d-flex gap-2">
+                                <input type="number" class="form-control" id="cropWidth" min="50" max="1000" value="400" placeholder="宽度">
+                                <input type="number" class="form-control" id="cropHeight" min="50" max="1000" value="200" placeholder="高度">
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">预览尺寸：</label>
+                            <select id="previewSize" class="form-select">
+                                <option value="1:1">1:1</option>
+                                <option value="3:4">3:4</option>
+                                <option value="4:3">4:3</option>
+                                <option value="16:9">16:9</option>
+                                <option value="9:16">9:16</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            <label class="form-label">裁剪形状：</label>
+                            <select class="form-select" id="cropShape">
+                                <option value="rectangle">矩形（物品图片）</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">预览：</label>
+                            <div id="previewContainer" style="width: 200px; height: 200px; border: 1px solid #ddd; border-radius: 5px; overflow: hidden; margin: 0 auto;">
+                                <canvas id="previewCanvas" width="200" height="200"></canvas>
+                            </div>
+                        </div>
+                        <div class="d-grid gap-2">
+                            <button type="button" class="btn btn-primary" id="cropImage">裁剪并保存</button>
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Toast通知容器 -->
+<div class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 1100;">
+    <div id="successToast" class="toast align-items-center text-bg-success border-0" role="alert">
+        <div class="d-flex">
+            <div class="toast-body">
+                <i class="fas fa-check-circle me-2"></i>图片裁剪完成！
+            </div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+        </div>
+    </div>
+    
+    <div id="errorToast" class="toast align-items-center text-bg-danger border-0" role="alert">
+        <div class="d-flex">
+            <div class="toast-body">
+                <i class="fas fa-exclamation-circle me-2"></i>裁剪失败，请重试。
+            </div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+// 图片编辑功能
+let currentImageFile = null;
+let canvas = document.getElementById('imageCanvas');
+let ctx = canvas.getContext('2d');
+let previewCanvas = document.getElementById('previewCanvas');
+let previewCtx = previewCanvas.getContext('2d');
+let image = new Image();
+let scale = 1;
+let offsetX = 0;
+let offsetY = 0;
+
+// 裁剪框相关变量
+let cropFrame = document.getElementById('cropFrame');
+let cropWidthInput = document.getElementById('cropWidth');
+let cropHeightInput = document.getElementById('cropHeight');
+let cropSizeDisplay = document.getElementById('cropSize');
+
+// 拖动相关变量
+let isDragging = false;
+let isResizing = false;
+let resizeHandle = null;
+let lastX, lastY;
+let cropFrameX = 50, cropFrameY = 50, cropFrameWidth = 300, cropFrameHeight = 200;
+
+// 初始化图片编辑器
+function initImageEditor() {
+    // 监听文件上传
+    document.getElementById('{{ form.image.id_for_label }}').addEventListener('change', function(e) {
+        if (e.target.files.length > 0) {
+            openImageEditor(e.target.files[0]);
+        }
+    });
+
+    // 编辑图片按钮
+    document.getElementById('editImageBtn').addEventListener('click', function() {
+        if (currentImageFile) {
+            openImageEditor(currentImageFile);
+        }
+    });
+
+    // 缩放控制
+    document.getElementById('zoomSlider').addEventListener('input', function(e) {
+        scale = parseFloat(e.target.value);
+        document.getElementById('zoomValue').textContent = Math.round(scale * 100) + '%';
+        drawImage();
+    });
+
+    // 滚轮控制缩放条
+    document.getElementById('imageEditorContainer').addEventListener('wheel', function(e) {
+        e.preventDefault();
+        
+        // 获取当前缩放值
+        const currentScale = parseFloat(document.getElementById('zoomSlider').value);
+        
+        // 超高精度缩放控制
+        const delta = -e.deltaY * 0.001;
+        let newScale = currentScale + delta;
+        
+        // 限制缩放范围
+        newScale = Math.max(0.1, Math.min(3, newScale));
+        
+        // 更新滑块和显示
+        document.getElementById('zoomSlider').value = newScale;
+        document.getElementById('zoomValue').textContent = Math.round(newScale * 100) + '%';
+        
+        // 触发缩放事件
+        scale = newScale;
+        drawImage();
+    });
+
+    // 裁剪框尺寸输入控制
+    cropWidthInput.addEventListener('input', updateCropFrameSize);
+    cropHeightInput.addEventListener('input', updateCropFrameSize);
+
+    // 预览尺寸选择控制
+    document.getElementById('previewSize').addEventListener('change', function(e) {
+        const ratio = e.target.value;
+        const [widthRatio, heightRatio] = ratio.split(':').map(Number);
+        const aspectRatio = widthRatio / heightRatio;
+        
+        // 根据比例设置预览尺寸
+        let width, height;
+        
+        if (aspectRatio >= 1) {
+            // 宽屏或正方形
+            width = 200;
+            height = Math.round(width / aspectRatio);
+        } else {
+            // 竖屏
+            height = 200;
+            width = Math.round(height * aspectRatio);
+        }
+        
+        // 设置canvas和容器尺寸
+        previewCanvas.width = width;
+        previewCanvas.height = height;
+        document.getElementById('previewContainer').style.width = width + 'px';
+        document.getElementById('previewContainer').style.height = height + 'px';
+        
+        updatePreview();
+    });
+
+    // 裁剪按钮
+    document.getElementById('cropImage').addEventListener('click', cropAndSave);
+
+    // 裁剪框拖动和调整大小事件
+    cropFrame.addEventListener('mousedown', startCropFrameDrag);
+    document.querySelectorAll('.resize-handle').forEach(handle => {
+        handle.addEventListener('mousedown', startResize);
+    });
+
+    // 全局鼠标事件
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+
+    // 触摸事件支持
+    cropFrame.addEventListener('touchstart', startCropFrameDrag);
+    document.querySelectorAll('.resize-handle').forEach(handle => {
+        handle.addEventListener('touchstart', startResize);
+    });
+    document.addEventListener('touchmove', handleTouchMove);
+    document.addEventListener('touchend', handleMouseUp);
+}
+
+// 打开图片编辑器
+function openImageEditor(file) {
+    currentImageFile = file;
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        image.src = e.target.result;
+        image.onload = function() {
+            // 重置缩放和位置
+            scale = 1;
+            offsetX = 0;
+            offsetY = 0;
+            document.getElementById('zoomSlider').value = 1;
+            
+            // 重置裁剪框位置和大小
+            cropFrameX = 50;
+            cropFrameY = 50;
+            cropFrameWidth = 300;
+            cropFrameHeight = 200;
+            cropWidthInput.value = cropFrameWidth;
+            cropHeightInput.value = cropFrameHeight;
+            updateCropSizeDisplay();
+            updateCropFramePosition();
+            
+            // 显示弹窗
+            const modal = new bootstrap.Modal(document.getElementById('imageEditorModal'));
+            modal.show();
+            
+            // 绘制图片
+            drawImage();
+        };
+    };
+    reader.readAsDataURL(file);
+}
+
+// 更新裁剪框尺寸显示
+function updateCropSizeDisplay() {
+    cropSizeDisplay.textContent = cropFrameWidth + ' × ' + cropFrameHeight;
+}
+
+// 更新裁剪框位置
+function updateCropFramePosition() {
+    cropFrame.style.left = cropFrameX + 'px';
+    cropFrame.style.top = cropFrameY + 'px';
+    cropFrame.style.width = cropFrameWidth + 'px';
+    cropFrame.style.height = cropFrameHeight + 'px';
+}
+
+// 更新裁剪框尺寸
+function updateCropFrameSize() {
+    cropFrameWidth = parseInt(cropWidthInput.value) || 300;
+    cropFrameHeight = parseInt(cropHeightInput.value) || 200;
+    
+    // 限制最小和最大尺寸
+    cropFrameWidth = Math.max(50, Math.min(400, cropFrameWidth));
+    cropFrameHeight = Math.max(50, Math.min(300, cropFrameHeight));
+    
+    cropWidthInput.value = cropFrameWidth;
+    cropHeightInput.value = cropFrameHeight;
+    
+    updateCropSizeDisplay();
+    updateCropFramePosition();
+    updatePreview();
+}
+
+// 绘制图片到画布
+function drawImage() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    // 计算缩放后的尺寸
+    const scaledWidth = image.width * scale;
+    const scaledHeight = image.height * scale;
+    
+    // 居中显示
+    const x = (canvas.width - scaledWidth) / 2 + offsetX;
+    const y = (canvas.height - scaledHeight) / 2 + offsetY;
+    
+    // 绘制图片
+    ctx.drawImage(image, x, y, scaledWidth, scaledHeight);
+    
+    // 绘制辅助线
+    drawGuidelines();
+    
+    // 更新预览
+    updatePreview();
+}
+
+// 绘制辅助线
+function drawGuidelines() {
+    ctx.save();
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.7)';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([5, 5]);
+    
+    // 垂直中线
+    ctx.beginPath();
+    ctx.moveTo(canvas.width / 2, 0);
+    ctx.lineTo(canvas.width / 2, canvas.height);
+    ctx.stroke();
+    
+    // 水平中线
+    ctx.beginPath();
+    ctx.moveTo(0, canvas.height / 2);
+    ctx.lineTo(canvas.width, canvas.height / 2);
+    ctx.stroke();
+    
+    // 九宫格辅助线
+    const thirdWidth = canvas.width / 3;
+    const thirdHeight = canvas.height / 3;
+    
+    ctx.beginPath();
+    ctx.moveTo(thirdWidth, 0);
+    ctx.lineTo(thirdWidth, canvas.height);
+    ctx.stroke();
+    
+    ctx.beginPath();
+    ctx.moveTo(thirdWidth * 2, 0);
+    ctx.lineTo(thirdWidth * 2, canvas.height);
+    ctx.stroke();
+    
+    ctx.beginPath();
+    ctx.moveTo(0, thirdHeight);
+    ctx.lineTo(canvas.width, thirdHeight);
+    ctx.stroke();
+    
+    ctx.beginPath();
+    ctx.moveTo(0, thirdHeight * 2);
+    ctx.lineTo(canvas.width, thirdHeight * 2);
+    ctx.stroke();
+    
+    ctx.restore();
+}
+
+// 更新预览
+function updatePreview() {
+    previewCtx.clearRect(0, 0, previewCanvas.width, previewCanvas.height);
+    
+    if (!image.complete) return;
+    
+    // 计算当前显示区域在原始图片中的位置和尺寸
+    const scaledWidth = image.width * scale;
+    const scaledHeight = image.height * scale;
+    
+    // 计算当前显示区域在原始图片中的位置
+    const displayX = (canvas.width - scaledWidth) / 2 + offsetX;
+    const displayY = (canvas.height - scaledHeight) / 2 + offsetY;
+    
+    // 使用裁剪框的位置和尺寸
+    const sourceX = Math.max(0, (cropFrameX - displayX) / scale);
+    const sourceY = Math.max(0, (cropFrameY - displayY) / scale);
+    const sourceWidth = Math.min(image.width - sourceX, cropFrameWidth / scale);
+    const sourceHeight = Math.min(image.height - sourceY, cropFrameHeight / scale);
+    
+    // 填充白色背景
+    previewCtx.fillStyle = '#ffffff';
+    previewCtx.fillRect(0, 0, previewCanvas.width, previewCanvas.height);
+    
+    // 计算裁剪区域在图片中的实际位置
+    const actualSourceX = Math.max(0, sourceX);
+    const actualSourceY = Math.max(0, sourceY);
+    const actualSourceWidth = Math.min(image.width - actualSourceX, sourceWidth);
+    const actualSourceHeight = Math.min(image.height - actualSourceY, sourceHeight);
+    
+    // 计算在预览窗口中的绘制位置和尺寸
+    const drawWidth = Math.min(previewCanvas.width, previewCanvas.width * (actualSourceWidth / sourceWidth));
+    const drawHeight = Math.min(previewCanvas.height, previewCanvas.height * (actualSourceHeight / sourceHeight));
+    const drawX = (previewCanvas.width - drawWidth) / 2;
+    const drawY = (previewCanvas.height - drawHeight) / 2;
+    
+    // 绘制图片（不拉伸，保持原始比例）
+    if (actualSourceWidth > 0 && actualSourceHeight > 0) {
+        previewCtx.drawImage(image, actualSourceX, actualSourceY, actualSourceWidth, actualSourceHeight, 
+                           drawX, drawY, drawWidth, drawHeight);
+    }
+}
+
+// 开始裁剪框拖动
+function startCropFrameDrag(e) {
+    e.preventDefault();
+    isDragging = true;
+    const rect = cropFrame.getBoundingClientRect();
+    lastX = (e.clientX || e.touches[0].clientX);
+    lastY = (e.clientY || e.touches[0].clientY);
+    cropFrame.style.cursor = 'grabbing';
+}
+
+// 开始调整大小
+function startResize(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    isResizing = true;
+    resizeHandle = e.target.getAttribute('data-handle');
+    const rect = cropFrame.getBoundingClientRect();
+    lastX = (e.clientX || e.touches[0].clientX);
+    lastY = (e.clientY || e.touches[0].clientY);
+}
+
+// 处理鼠标移动
+function handleMouseMove(e) {
+    if (isDragging) {
+        handleCropFrameDrag(e);
+    } else if (isResizing) {
+        handleResize(e);
+    }
+}
+
+// 处理触摸移动
+function handleTouchMove(e) {
+    if (isDragging || isResizing) {
+        handleMouseMove(e);
+    }
+}
+
+// 处理裁剪框拖动
+function handleCropFrameDrag(e) {
+    e.preventDefault();
+    const currentX = (e.clientX || e.touches[0].clientX);
+    const currentY = (e.clientY || e.touches[0].clientY);
+    
+    const deltaX = currentX - lastX;
+    const deltaY = currentY - lastY;
+    
+    // 更新裁剪框位置
+    cropFrameX += deltaX;
+    cropFrameY += deltaY;
+    
+    // 限制在画布范围内
+    cropFrameX = Math.max(0, Math.min(canvas.width - cropFrameWidth, cropFrameX));
+    cropFrameY = Math.max(0, Math.min(canvas.height - cropFrameHeight, cropFrameY));
+    
+    updateCropFramePosition();
+    updatePreview();
+    
+    lastX = currentX;
+    lastY = currentY;
+}
+
+// 处理调整大小
+function handleResize(e) {
+    e.preventDefault();
+    const currentX = (e.clientX || e.touches[0].clientX);
+    const currentY = (e.clientY || e.touches[0].clientY);
+    
+    const deltaX = currentX - lastX;
+    const deltaY = currentY - lastY;
+    
+    // 根据不同的调整点处理不同的调整方向
+    switch (resizeHandle) {
+        case 'nw': // 左上角
+            cropFrameX += deltaX;
+            cropFrameY += deltaY;
+            cropFrameWidth -= deltaX;
+            cropFrameHeight -= deltaY;
+            break;
+        case 'ne': // 右上角
+            cropFrameY += deltaY;
+            cropFrameWidth += deltaX;
+            cropFrameHeight -= deltaY;
+            break;
+        case 'sw': // 左下角
+            cropFrameX += deltaX;
+            cropFrameWidth -= deltaX;
+            cropFrameHeight += deltaY;
+            break;
+        case 'se': // 右下角
+            cropFrameWidth += deltaX;
+            cropFrameHeight += deltaY;
+            break;
+    }
+    
+    // 限制最小尺寸
+    cropFrameWidth = Math.max(50, cropFrameWidth);
+    cropFrameHeight = Math.max(50, cropFrameHeight);
+    
+    // 限制在画布范围内
+    cropFrameX = Math.max(0, Math.min(canvas.width - cropFrameWidth, cropFrameX));
+    cropFrameY = Math.max(0, Math.min(canvas.height - cropFrameHeight, cropFrameY));
+    
+    // 更新输入框和显示
+    cropWidthInput.value = cropFrameWidth;
+    cropHeightInput.value = cropFrameHeight;
+    updateCropSizeDisplay();
+    updateCropFramePosition();
+    updatePreview();
+    
+    lastX = currentX;
+    lastY = currentY;
+}
+
+// 处理鼠标释放
+function handleMouseUp() {
+    isDragging = false;
+    isResizing = false;
+    resizeHandle = null;
+    cropFrame.style.cursor = 'move';
+}
+
+// 开始拖动
+function startDrag(e) {
+    isDragging = true;
+    const rect = canvas.getBoundingClientRect();
+    lastX = (e.clientX || e.touches[0].clientX) - rect.left;
+    lastY = (e.clientY || e.touches[0].clientY) - rect.top;
+    canvas.style.cursor = 'grabbing';
+}
+
+// 拖动中
+function drag(e) {
+    if (!isDragging) return;
+    
+    e.preventDefault();
+    const rect = canvas.getBoundingClientRect();
+    const currentX = (e.clientX || e.touches[0].clientX) - rect.left;
+    const currentY = (e.clientY || e.touches[0].clientY) - rect.top;
+    
+    offsetX += currentX - lastX;
+    offsetY += currentY - lastY;
+    
+    lastX = currentX;
+    lastY = currentY;
+    
+    drawImage();
+}
+
+// 结束拖动
+function endDrag() {
+    isDragging = false;
+    canvas.style.cursor = 'grab';
+}
+
+// 裁剪并保存
+function cropAndSave() {
+    try {
+        // 创建临时canvas进行裁剪
+        const tempCanvas = document.createElement('canvas');
+        const tempCtx = tempCanvas.getContext('2d');
+        
+        // 设置裁剪尺寸（使用裁剪框的尺寸）
+        tempCanvas.width = cropFrameWidth;
+        tempCanvas.height = cropFrameHeight;
+        
+        // 填充白色背景
+        tempCtx.fillStyle = '#ffffff';
+        tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
+        
+        // 计算裁剪区域（使用可调整的裁剪框）
+        const scaledWidth = image.width * scale;
+        const scaledHeight = image.height * scale;
+        const displayX = (canvas.width - scaledWidth) / 2 + offsetX;
+        const displayY = (canvas.height - scaledHeight) / 2 + offsetY;
+        
+        // 精确计算裁剪区域，确保与预览一致
+        const sourceX = Math.max(0, (cropFrameX - displayX) / scale);
+        const sourceY = Math.max(0, (cropFrameY - displayY) / scale);
+        const sourceWidth = Math.min(image.width - sourceX, cropFrameWidth / scale);
+        const sourceHeight = Math.min(image.height - sourceY, cropFrameHeight / scale);
+        
+        // 严格截取裁剪框内的内容，并拉伸填充到目标尺寸
+        tempCtx.drawImage(image, sourceX, sourceY, sourceWidth, sourceHeight, 0, 0, tempCanvas.width, tempCanvas.height);
+        
+        // 将裁剪后的图片转换为Blob
+        tempCanvas.toBlob(function(blob) {
+            // 创建新的File对象
+            const croppedFile = new File([blob], 'cropped_' + currentImageFile.name, {
+                type: 'image/jpeg',
+                lastModified: Date.now()
+            });
+            
+            // 更新文件输入
+            const dataTransfer = new DataTransfer();
+            dataTransfer.items.add(croppedFile);
+            document.getElementById('{{ form.image.id_for_label }}').files = dataTransfer.files;
+            
+            // 更新预览
+            updateImagePreview(croppedFile);
+            
+            // 显示成功消息
+            const toast = new bootstrap.Toast(document.getElementById('successToast'));
+            toast.show();
+            
+            // 关闭弹窗
+            bootstrap.Modal.getInstance(document.getElementById('imageEditorModal')).hide();
+            
+        }, 'image/jpeg', 0.9);
+        
+    } catch (error) {
+        console.error('裁剪失败:', error);
+        const toast = new bootstrap.Toast(document.getElementById('errorToast'));
+        toast.show();
+    }
+}
+
+// 更新图片预览
+function updateImagePreview(file) {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        document.getElementById('previewImage').src = e.target.result;
+        document.getElementById('imagePreview').style.display = 'block';
+    };
+    reader.readAsDataURL(file);
+}
+
+// 页面加载完成后初始化
+document.addEventListener('DOMContentLoaded', function() {
+    initImageEditor();
+    
+    // 监听文件选择，显示预览
+    document.getElementById('{{ form.image.id_for_label }}').addEventListener('change', function(e) {
+        if (e.target.files.length > 0) {
+            currentImageFile = e.target.files[0];
+            updateImagePreview(currentImageFile);
+        }
+    });
+});
+</script>
+{% endblock %}
+
+{% endblock %}

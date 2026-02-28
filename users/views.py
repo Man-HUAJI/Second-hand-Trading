@@ -4,8 +4,9 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.contrib import messages
 from django.db.models import Avg
-from .forms import CustomUserCreationForm, CustomAuthenticationForm, ProfileUpdateForm, ItemForm, ReviewForm
-from .models import Profile, Item, Review
+from items.models import Item  # 使用items应用中的Item模型
+from .forms import CustomUserCreationForm, CustomAuthenticationForm, ProfileUpdateForm, ReviewForm
+from .models import Profile, Review
 
 def register(request):
     """用户注册视图"""
@@ -39,7 +40,7 @@ def user_login(request):
                 messages.success(request, f'登录成功！欢迎 {user.username}')
                 
                 # 重定向到用户请求的页面或首页
-                next_url = request.GET.get('next', 'core:home')
+                next_url = request.GET.get('next', 'home')
                 return redirect(next_url)
             else:
                 messages.error(request, '用户名或密码错误')
@@ -55,7 +56,7 @@ def user_logout(request):
     """用户登出视图"""
     logout(request)
     messages.success(request, '您已成功退出登录')
-    return redirect('core:home')
+    return redirect('home')
 
 @login_required
 def dashboard(request):

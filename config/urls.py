@@ -21,7 +21,8 @@ from django.conf.urls.static import static
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('', include('core.urls')),
+    path('', include('items.urls')),  # 物品系统首页
+    path('core/', include('core.urls')),  # 原核心功能
     path('users/', include('users.urls')),
 ]
 

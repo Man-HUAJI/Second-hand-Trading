@@ -4,5 +4,5 @@ from . import views
 app_name = 'core'
 
 urlpatterns = [
-    path('', views.home, name='home'),
+    # core应用不再提供首页，首页由items应用提供
 ]

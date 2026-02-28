@@ -1,0 +1,197 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ item.title }} - 物品详情{% endblock %}
+
+{% block content %}
+<!-- 顶部导航栏 -->
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+    <div class="container">
+        <a class="navbar-brand fw-bold" href="{% url 'home' %}">
+            <i class="fas fa-recycle me-2"></i>校园二手
+        </a>
+        
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav ms-auto">
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'item_list' %}">物品列表</a>
+                </li>
+                
+                {% if user.is_authenticated %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'users:dashboard' %}">个人中心</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'item_create' %}">发布物品</a>
+                    </li>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                            <i class="fas fa-user me-1"></i>
+                            {% if user.profile.nickname %}
+                                {{ user.profile.nickname }}
+                            {% else %}
+                                {{ user.username }}
+                            {% endif %}
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="{% url 'users:dashboard' %}">
+                                <i class="fas fa-tachometer-alt me-2"></i>仪表板
+                            </a></li>
+                            <li><a class="dropdown-item" href="{% url 'my_items' %}">
+                                <i class="fas fa-box me-2"></i>我的物品
+                            </a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="{% url 'users:logout' %}">
+                                <i class="fas fa-sign-out-alt me-2"></i>退出登录
+                            </a></li>
+                        </ul>
+                    </li>
+                {% else %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'users:login' %}">登录</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'users:register' %}">注册</a>
+                    </li>
+                {% endif %}
+            </ul>
+        </div>
+    </div>
+</nav>
+
+<div class="container mt-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'home' %}">首页</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'item_list' %}">物品列表</a></li>
+            <li class="breadcrumb-item active">{{ item.title }}</li>
+        </ol>
+    </nav>
+    
+    <div class="row">
+        <!-- 物品图片 -->
+        <div class="col-md-5">
+            <div class="card">
+                <div class="card-body text-center">
+                    <img src="{{ item.get_image_url }}" 
+                         class="img-fluid rounded" 
+                         alt="{{ item.title }}"
+                         style="max-height: 400px; object-fit: contain;">
+                </div>
+            </div>
+        </div>
+        
+        <!-- 物品信息 -->
+        <div class="col-md-7">
+            <div class="card">
+                <div class="card-header">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h3 class="card-title mb-0">{{ item.title }}</h3>
+                        <span class="badge bg-{% if item.status == 'active' %}success{% elif item.status == 'sold' %}danger{% else %}secondary{% endif %}">
+                            {{ item.get_status_display }}
+                        </span>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-sm-6">
+                            <strong>分类：</strong>
+                            <span class="badge bg-primary">{{ item.category.name }}</span>
+                        </div>
+                        <div class="col-sm-6">
+                            <strong>物品状态：</strong>
+                            <span class="badge bg-info">{{ item.get_condition_display }}</span>
+                        </div>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-sm-6">
+                            <strong>交易方式：</strong>
+                            <span class="badge bg-warning text-dark">{{ item.get_trade_method_display }}</span>
+                        </div>
+                        <div class="col-sm-6">
+                            <strong>发布时间：</strong>
+                            <span>{{ item.created_at|date:"Y年m月d日 H:i" }}</span>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <strong>详细描述：</strong>
+                        <div class="mt-2 p-3 bg-light rounded">
+                            {{ item.description|linebreaks }}
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <strong>联系方式：</strong>
+                        <div class="mt-2">
+                            <span class="badge bg-success fs-6">{{ item.contact }}</span>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <strong>发布者：</strong>
+                        <div class="mt-2">
+                            <div class="d-flex align-items-center">
+                                <img src="{{ item.seller.profile.get_avatar_url }}" 
+                                     class="rounded-circle me-2" 
+                                     width="40" 
+                                     height="40" 
+                                     alt="{{ item.seller.username }}">
+                                <span>{{ item.seller.username }}</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    {% if is_owner %}
+                    <div class="border-top pt-3 mt-3">
+                        <h6>管理操作</h6>
+                        <div class="btn-group" role="group">
+                            <a href="{% url 'item_edit' item.pk %}" class="btn btn-outline-primary">编辑</a>
+                            <a href="{% url 'item_toggle_status' item.pk %}" class="btn btn-outline-{% if item.status == 'active' %}warning{% else %}success{% endif %}">
+                                {% if item.status == 'active' %}下架{% else %}上架{% endif %}
+                            </a>
+                            <a href="{% url 'my_items' %}" class="btn btn-outline-secondary">我的物品</a>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 相关物品推荐 -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <h4>同类物品推荐</h4>
+            <div class="row">
+                {% for related_item in related_items %}
+                <div class="col-md-3 mb-3">
+                    <div class="card h-100">
+                        <img src="{{ related_item.get_image_url }}" 
+                             class="card-img-top" 
+                             alt="{{ related_item.title }}"
+                             style="height: 150px; object-fit: cover;">
+                        <div class="card-body">
+                            <h6 class="card-title">{{ related_item.title|truncatechars:20 }}</h6>
+                            <p class="card-text small text-muted">{{ related_item.description|truncatechars:30 }}</p>
+                        </div>
+                        <div class="card-footer">
+                            <a href="{% url 'item_detail' related_item.pk %}" class="btn btn-sm btn-outline-primary">查看详情</a>
+                        </div>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="col-12">
+                    <div class="alert alert-info">暂无同类物品</div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

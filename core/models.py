@@ -26,19 +26,5 @@ class Category(models.Model):
     def __str__(self):
         return self.name
 
-class Item(models.Model):
-    title = models.CharField(max_length=200, verbose_name='物品标题')
-    description = models.TextField(verbose_name='物品描述')
-    category = models.ForeignKey(Category, on_delete=models.CASCADE, verbose_name='分类')
-    price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True, verbose_name='价格')
-    image = models.ImageField(upload_to='items/', null=True, blank=True, verbose_name='物品图片')
-    created_at = models.DateTimeField(auto_now_add=True, verbose_name='发布时间')
-    seller = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name='发布者')
-    
-    class Meta:
-        verbose_name = '物品'
-        verbose_name_plural = '物品'
-        ordering = ['-created_at']
-    
-    def __str__(self):
-        return self.title
+# Item模型已迁移到items应用中
+# 请使用items应用中的Item模型

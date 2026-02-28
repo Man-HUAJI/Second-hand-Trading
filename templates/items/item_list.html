@@ -1,0 +1,248 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}物品列表 - 校园二手{% endblock %}
+
+{% block content %}
+<!-- 顶部导航栏 -->
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+    <div class="container">
+        <a class="navbar-brand fw-bold" href="{% url 'home' %}">
+            <i class="fas fa-recycle me-2"></i>校园二手
+        </a>
+        
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav ms-auto">
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'item_list' %}">物品列表</a>
+                </li>
+                
+                {% if user.is_authenticated %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'users:dashboard' %}">个人中心</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'item_create' %}">发布物品</a>
+                    </li>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                            <i class="fas fa-user me-1"></i>
+                            {% if user.profile.nickname %}
+                                {{ user.profile.nickname }}
+                            {% else %}
+                                {{ user.username }}
+                            {% endif %}
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="{% url 'users:dashboard' %}">
+                                <i class="fas fa-tachometer-alt me-2"></i>仪表板
+                            </a></li>
+                            <li><a class="dropdown-item" href="{% url 'my_items' %}">
+                                <i class="fas fa-box me-2"></i>我的物品
+                            </a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="{% url 'users:logout' %}">
+                                <i class="fas fa-sign-out-alt me-2"></i>退出登录
+                            </a></li>
+                        </ul>
+                    </li>
+                {% else %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'users:login' %}">登录</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'users:register' %}">注册</a>
+                    </li>
+                {% endif %}
+            </ul>
+        </div>
+    </div>
+</nav>
+
+<div class="container mt-4">
+    <div class="row">
+        <!-- 侧边栏筛选 -->
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0">筛选条件</h6>
+                </div>
+                <div class="card-body">
+                    <form method="get" id="filter-form">
+                        <!-- 搜索框 -->
+                        <div class="mb-3">
+                            <label for="q" class="form-label">关键词搜索</label>
+                            <input type="text" name="q" id="q" class="form-control" 
+                                   value="{{ query }}" placeholder="输入物品名称或描述">
+                        </div>
+                        
+                        <!-- 分类筛选 -->
+                        <div class="mb-3">
+                            <label for="category" class="form-label">物品分类</label>
+                            <select name="category" id="category" class="form-select">
+                                <option value="">所有分类</option>
+                                {% for category in categories %}
+                                    <option value="{{ category.id }}" 
+                                            {% if selected_category == category.id %}selected{% endif %}>
+                                        {{ category.name }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary">应用筛选</button>
+                            <a href="{% url 'item_list' %}" class="btn btn-outline-secondary mt-2">重置</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <!-- 发布物品按钮 -->
+            {% if user.is_authenticated %}
+            <div class="mt-3">
+                <a href="{% url 'item_create' %}" class="btn btn-success w-100">
+                    <i class="fas fa-plus me-2"></i>发布物品
+                </a>
+            </div>
+            {% endif %}
+        </div>
+        
+        <!-- 物品列表 -->
+        <div class="col-md-9">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h4>
+                    {% if query %}搜索 "{{ query }}" 的结果{% else %}所有物品{% endif %}
+                    <small class="text-muted">({{ items|length }} 件)</small>
+                </h4>
+                <div class="btn-group">
+                    <button class="btn btn-outline-secondary active" onclick="setView('grid')">
+                        <i class="fas fa-th"></i>
+                    </button>
+                    <button class="btn btn-outline-secondary" onclick="setView('list')">
+                        <i class="fas fa-list"></i>
+                    </button>
+                </div>
+            </div>
+            
+            {% if items %}
+                <div id="grid-view" class="row g-3">
+                    {% for item in items %}
+                    <div class="col-lg-4 col-md-6">
+                        <div class="card h-100">
+                            <a href="{% url 'item_detail' item.pk %}">
+                                <img src="{{ item.get_image_url }}" 
+                                     class="card-img-top" 
+                                     alt="{{ item.title }}"
+                                     style="height: 200px; object-fit: cover;">
+                            </a>
+                            <div class="card-body">
+                                <h6 class="card-title">
+                                    <a href="{% url 'item_detail' item.pk %}" class="text-decoration-none text-dark">
+                                        {{ item.title|truncatechars:30 }}
+                                    </a>
+                                </h6>
+                                <p class="card-text small text-muted">
+                                    {{ item.description|truncatechars:80 }}
+                                </p>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span class="badge bg-primary">{{ item.category.name }}</span>
+                                    <span class="badge bg-info">{{ item.get_condition_display }}</span>
+                                </div>
+                            </div>
+                            <div class="card-footer">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <small class="text-muted">
+                                        <i class="far fa-clock me-1"></i>
+                                        {{ item.created_at|date:"m-d" }}
+                                    </small>
+                                    <span class="badge bg-light text-dark">{{ item.get_trade_method_display }}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                
+                <!-- 列表视图（隐藏） -->
+                <div id="list-view" class="d-none">
+                    {% for item in items %}
+                    <div class="card mb-3">
+                        <div class="row g-0">
+                            <div class="col-md-3">
+                                <img src="{{ item.get_image_url }}" 
+                                     class="img-fluid rounded-start h-100" 
+                                     alt="{{ item.title }}"
+                                     style="object-fit: cover;">
+                            </div>
+                            <div class="col-md-9">
+                                <div class="card-body">
+                                    <h5 class="card-title">
+                                        <a href="{% url 'item_detail' item.pk %}" class="text-decoration-none">
+                                            {{ item.title }}
+                                        </a>
+                                    </h5>
+                                    <p class="card-text">{{ item.description|truncatechars:150 }}</p>
+                                    <div class="d-flex flex-wrap gap-2">
+                                        <span class="badge bg-primary">{{ item.category.name }}</span>
+                                        <span class="badge bg-info">{{ item.get_condition_display }}</span>
+                                        <span class="badge bg-warning text-dark">{{ item.get_trade_method_display }}</span>
+                                        <span class="badge bg-light text-dark">
+                                            <i class="far fa-clock me-1"></i>
+                                            {{ item.created_at|date:"Y-m-d" }}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="text-center py-5">
+                    <i class="fas fa-search fa-4x text-muted mb-3"></i>
+                    <h4 class="text-muted">没有找到符合条件的物品</h4>
+                    <p class="text-muted">尝试调整筛选条件或发布第一个物品</p>
+                    {% if user.is_authenticated %}
+                    <a href="{% url 'item_create' %}" class="btn btn-primary mt-3">发布物品</a>
+                    {% endif %}
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+function setView(viewType) {
+    const gridView = document.getElementById('grid-view');
+    const listView = document.getElementById('list-view');
+    const gridBtn = document.querySelector('button[onclick="setView(\'grid\')"]');
+    const listBtn = document.querySelector('button[onclick="setView(\'list\')"]');
+    
+    if (viewType === 'grid') {
+        gridView.classList.remove('d-none');
+        listView.classList.add('d-none');
+        gridBtn.classList.add('active');
+        listBtn.classList.remove('active');
+    } else {
+        gridView.classList.add('d-none');
+        listView.classList.remove('d-none');
+        gridBtn.classList.remove('active');
+        listBtn.classList.add('active');
+    }
+}
+
+// 自动提交表单
+const filterForm = document.getElementById('filter-form');
+const inputs = filterForm.querySelectorAll('input, select');
+inputs.forEach(input => {
+    input.addEventListener('change', function() {
+        filterForm.submit();
+    });
+});
+</script>
+{% endblock %}

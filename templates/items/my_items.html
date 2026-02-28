@@ -1,0 +1,140 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}我的物品 - 校园二手{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>我的物品</h2>
+        <a href="{% url 'item_create' %}" class="btn btn-primary">
+            <i class="fas fa-plus me-2"></i>发布新物品
+        </a>
+    </div>
+    
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
+    
+    {% if items %}
+        <div class="row g-3">
+            {% for item in items %}
+            <div class="col-lg-4 col-md-6">
+                <div class="card h-100">
+                    <div class="position-relative">
+                        <a href="{% url 'item_detail' item.pk %}">
+                            <img src="{{ item.get_image_url }}" 
+                                 class="card-img-top" 
+                                 alt="{{ item.title }}"
+                                 style="height: 200px; object-fit: cover;">
+                        </a>
+                        <span class="position-absolute top-0 start-0 m-2 badge 
+                                   {% if item.status == 'active' %}bg-success
+                                   {% elif item.status == 'sold' %}bg-danger
+                                   {% else %}bg-secondary{% endif %}">
+                            {{ item.get_status_display }}
+                        </span>
+                    </div>
+                    
+                    <div class="card-body">
+                        <h6 class="card-title">
+                            <a href="{% url 'item_detail' item.pk %}" class="text-decoration-none text-dark">
+                                {{ item.title|truncatechars:30 }}
+                            </a>
+                        </h6>
+                        <p class="card-text small text-muted">
+                            {{ item.description|truncatechars:80 }}
+                        </p>
+                        
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="badge bg-primary">{{ item.category.name }}</span>
+                            <span class="badge bg-{{ item.get_condition_display|cut:' ' }}">{{ item.get_condition_display }}</span>
+                        </div>
+                        
+                        <div class="d-flex justify-content-between align-items-center">
+                            <small class="text-muted">
+                                <i class="far fa-clock me-1"></i>
+                                {{ item.created_at|date:"Y-m-d" }}
+                            </small>
+                            <span class="badge bg-light text-dark">{{ item.get_trade_method_display }}</span>
+                        </div>
+                    </div>
+                    
+                    <div class="card-footer">
+                        <div class="btn-group w-100" role="group">
+                            <a href="{% url 'item_detail' item.pk %}" class="btn btn-sm btn-outline-primary">查看</a>
+                            <a href="{% url 'item_edit' item.pk %}" class="btn btn-sm btn-outline-secondary">编辑</a>
+                            <a href="{% url 'item_toggle_status' item.pk %}" 
+                               class="btn btn-sm btn-outline-{% if item.status == 'active' %}warning{% else %}success{% endif %}">
+                                {% if item.status == 'active' %}下架{% else %}上架{% endif %}
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="text-center py-5">
+            <i class="fas fa-box-open fa-4x text-muted mb-3"></i>
+            <h4 class="text-muted">您还没有发布任何物品</h4>
+            <p class="text-muted">开始发布您的第一个闲置物品吧！</p>
+            <a href="{% url 'item_create' %}" class="btn btn-primary mt-3">发布物品</a>
+        </div>
+    {% endif %}
+</div>
+
+<!-- 统计信息卡片 -->
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h3 class="text-primary">{{ items|length }}</h3>
+                    <p class="text-muted mb-0">总物品数</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h3 class="text-success">{{ active_items_count }}</h3>
+                    <p class="text-muted mb-0">在售物品</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h3 class="text-danger">{{ sold_items_count }}</h3>
+                    <p class="text-muted mb-0">已售物品</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h3 class="text-secondary">{{ inactive_items_count }}</h3>
+                    <p class="text-muted mb-0">下架物品</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// 更新统计信息（需要在视图中计算）
+const activeItemsCount = {{ items|filter:"status"|equalto:"active"|length }};
+const soldItemsCount = {{ items|filter:"status"|equalto:"sold"|length }};
+const inactiveItemsCount = {{ items|filter:"status"|equalto:"inactive"|length }};
+
+// 如果需要动态更新，可以在这里添加JavaScript代码
+</script>
+{% endblock %}
